@@ -1,0 +1,92 @@
+import requests                    # for "get" request to API
+import json                        # parse json into a list
+import pandas as pd                # working with data frames
+import datetime as dt              # working with dates
+import matplotlib.pyplot as plt    # plot data
+import time
+import csv
+
+def get_percent(df):
+    df_mean = df['volume'].mean()
+    df_last_elem = df['volume'].iloc[-1]    
+    percent = df_last_elem / df_mean
+    return (percent - 1) * 100
+
+def get_binance_bars(symbol, interval, startTime, endTime):
+    url = "https://api.binance.com/api/v3/klines"
+
+    startTime = str(int(startTime.timestamp() * 1000))
+    endTime = str(int(endTime.timestamp() * 1000))
+    limit = '1000'
+
+    req_params = {"symbol": symbol, 'interval': interval, 'startTime': startTime, 'endTime': endTime, 'limit': limit}
+
+    df = pd.DataFrame(json.loads(requests.get(url, params=req_params).text))
+
+    if (len(df.index) == 0):
+        return None
+
+    df = df.iloc[:, 0:6]
+    df.columns = ['datetime', 'open', 'high', 'low', 'close', 'volume']
+    
+    df.open = df.open.astype("float")
+    df.high = df.high.astype("float")
+    df.low = df.low.astype("float")
+    df.close = df.close.astype("float")
+    df.volume = df.volume.astype("float")
+
+    # df['adj_close'] = df['close']
+    # df.index = [dt.datetime.fromtimestamp(x / 1000.0) for x in df.datetime]
+
+    return df
+
+
+df = get_binance_bars('ETHUSDT', '1d', dt.datetime(2021, 1, 1), dt.datetime(2021, 2, 1))
+
+BASE_URL = 'https://api.binance.com'
+# symbols = []
+# def save_symbols(symbols):
+#     with open(r'D:\py\qt_01\vscode_qt\symbols.txt', 'w', encoding='utf-8') as f:
+#         for symbol in symbols:
+#             print(symbol, file=f)
+
+# resp = requests.get(BASE_URL + '/api/v1/ticker/allBookTickers')
+# tickers_list = json.loads(resp.content)
+
+# for ticker in tickers_list:
+#     if str(ticker['symbol'])[-4:] == 'USDT':
+#         symbols.append(ticker['symbol'])
+# symbols.remove('BCCUSDT')
+# save_symbols(symbols)
+
+def open_symbols():
+    symbols = list()
+    with open(r'D:\py\qt_01\vscode_qt\symbols.txt', 'r', encoding='utf-8') as f:
+        while True:
+            symbol = f.readline()
+            if not symbol or symbol == '\n': break
+
+            symbols.append(symbol[:-1])
+    return symbols
+
+symbols = open_symbols()
+
+
+percent_volumes = dict()
+
+for symbol in symbols[0:10]:
+    print(f'{symbol}', end='')
+    df = get_binance_bars(symbol, '1d', dt.datetime(2021, 1, 1), dt.datetime(2021, 2, 1))
+    time.sleep(3)
+    percent = get_percent(df)
+    print(f': {percent:.2f}%')
+    print('---------------')
+    percent_volumes[symbol] = f'{percent:.2f}'
+
+def save_to_csv(percent_volumes):
+    with open(r'D:\py\qt_01\vscode_qt\result.csv', 'w', newline='', encoding='utf-8') as fr:
+        my_csv = csv.writer(fr, delimiter='\t', quotechar='"')
+        for symbol in percent_volumes:
+            my_csv.writerow([symbol, percent_volumes[symbol]])
+
+save_to_csv(percent_volumes)
