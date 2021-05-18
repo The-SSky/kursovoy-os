@@ -449,7 +449,14 @@ class myWindow(QMainWindow):
         
 
     def showQuests(self):
-        subprocess.run(['gnome-disks'])
+        try:
+            subprocess.run(['partitionmanager'])
+        except:
+            try:
+                subprocess.run(['gnome-disks'])
+            except:
+                print('disk-utility not opened')
+        
 
     def callTerminal(self):
         try:
@@ -485,6 +492,7 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.cutAction) 
             self.menu.addAction(self.pasteAction) 
             self.menu.addAction(self.moveToTrashAction)
+            self.menu.addAction(self.delAction)
 
             self.menu.addSeparator()
             self.menu.addAction(self.helpAction) 
@@ -719,7 +727,7 @@ background: transparent;
 selection-color: black;
 border: 1px solid lightgrey;
 selection-background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #729fcf, stop: 1  #204a87);
-color: black;
+color: white;
 outline: 0;
 } 
 
